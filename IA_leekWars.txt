@@ -1,0 +1,284 @@
+// Extrait d'une intélligence artificielle 
+// pour un jeu en ligne où l'on doit coder l'IA de son "leek" et de ses invocations en JS
+// https://leekwars.com
+
+// VARIABLES
+global enemy;
+global weaponCAC = WEAPON_KATANA;
+global weaponDist = WEAPON_DOUBLE_GUN;
+global me = getLeek();
+// FIN VARIABLES
+
+// FONCTIONS
+// Choix de l'ennemi
+function choixEnemy(){
+	var tabEnemies = getEnemies();
+	var tabEnemiesPos = [];
+	for (var i = 0; i < count(tabEnemies) ; i++) {
+		if (canUseWeapon(tabEnemies[i])) {
+			push(tabEnemiesPos, tabEnemies[i]);
+		}
+	}
+	if (tabEnemiesPos != []) {
+		enemy = tabEnemiesPos[0];
+		for (var i = 0; i < count(tabEnemiesPos); i++) {
+			if (getLife(tabEnemiesPos[i]) < getLife(enemy)) {
+				enemy = tabEnemiesPos[i];
+			}
+		}	
+	}else{
+		enemy = getNearestEnemy();
+	}
+}
+
+// Choix de l'arme
+function choixWeapon(){
+	if (getCellDistance(getCell(), getCell(enemy)) <= getMP()+1 && getWeapon() != weaponCAC) {
+		setWeapon(weaponCAC);
+	}else if (getWeapon() == null && getCellDistance(getCell(), getCell(enemy)) > 6) {
+		setWeapon(weaponDist);
+	}else if (getWeapon() == null && getCellDistance(getCell(), getCell(enemy)) <= 6) {
+		setWeapon(WEAPON_DESTROYER);
+	}else if (getWeapon() == weaponCAC && getCellDistance(getCell(), getCell(enemy)) > getMP()){
+		if (getCellDistance(getCell(), getCell(enemy)) - getMP() > 6) {
+					setWeapon(weaponDist);
+		}else{
+					setWeapon(WEAPON_DESTROYER);
+		}
+	}
+}
+
+// Choix et utilisation de la puce
+function choixChips(){
+	var TPrestant = getTP();
+	var chipUse = false;
+	var effectMe = getEffects();
+	var shieldOn = false;
+	for (var i = 0; i < count(effectMe); i++) {
+		if (effectMe[i] == CHIP_HELMET) {
+			shieldOn = true;
+		}
+	}
+	if (getLife(enemy) < 15 && canUseChip(CHIP_SPARK, enemy) && TPrestant >= 2) {
+		if (canUseChip(CHIP_ICE, enemy) && TPrestant >= getChipCost(CHIP_ICE)) {
+			useChip(CHIP_ICE, enemy);
+			chipUse = true;
+		}else if (canUseChip(CHIP_SPARK, enemy) && TPrestant >= getChipCost(CHIP_SPARK)) {
+			useChip(CHIP_SPARK, enemy);
+			chipUse = true;
+		}else if (canUseChip(CHIP_PEBBLE, enemy) && getCooldown(CHIP_PEBBLE) == 0 && TPrestant >= getChipCost(CHIP_PEBBLE)) {
+			useChip(CHIP_PEBBLE, enemy);
+			chipUse = true;
+		}else if (canUseChip(CHIP_SHOCK, enemy) && TPrestant >= getChipCost(CHIP_SHOCK)) {
+			useChip(CHIP_SHOCK, enemy);
+			chipUse = true;
+		}
+	}else if (getLife(me) < getTotalLife(me)/2 && canUseChip(CHIP_BANDAGE, me) && getCooldown(CHIP_BANDAGE) == 0 && TPrestant >= getChipCost(CHIP_BANDAGE)) {
+		useChip(CHIP_BANDAGE, me);
+		chipUse = true;
+	}else if (getLife(me) < getTotalLife(me)/2 && canUseChip(CHIP_CURE, me) && getCooldown(CHIP_CURE) == 0 && TPrestant >= getChipCost(CHIP_CURE)) {
+		useChip(CHIP_CURE, me);
+		chipUse = true;
+	}else if (canUseChip(CHIP_ICE, enemy) && TPrestant >= getChipCost(CHIP_ICE)) {
+		useChip(CHIP_ICE, enemy);
+		chipUse = true;
+	}else if (canUseChip(CHIP_SPARK, enemy)  && TPrestant >= getChipCost(CHIP_SPARK)) {
+		useChip(CHIP_SPARK, enemy);
+		chipUse = true;
+	}else if (canUseChip(CHIP_PEBBLE, enemy) && getCooldown(CHIP_PEBBLE) == 0 && TPrestant >= getChipCost(CHIP_PEBBLE)) {
+		useChip(CHIP_PEBBLE, enemy);
+		chipUse = true;
+	}else if (canUseChip(CHIP_SHOCK, enemy) && TPrestant >= getChipCost(CHIP_SHOCK)) {
+		useChip(CHIP_SHOCK, enemy);
+		chipUse = true;
+	}else{
+		if (getTotalLife(me)-getLife(me) >= 10 && canUseChip(CHIP_BANDAGE, me) && getCooldown(CHIP_BANDAGE) == 0 && TPrestant >= getChipCost(CHIP_BANDAGE)) {
+			useChip(CHIP_BANDAGE, me);
+			chipUse = true;
+		}else if (getTotalLife(me)-getLife(me) >= 35 && canUseChip(CHIP_CURE, me) && getCooldown(CHIP_CURE) == 0 && TPrestant >= getChipCost(CHIP_CURE)) {
+			useChip(CHIP_CURE, me);
+			chipUse = true;
+		}else{
+			return false;
+		}
+	}
+	return chipUse;
+}
+
+// Lance les actions de début de tour
+function actionTour(){
+	if (berserker() == false) {
+		var effectMe = getEffects();
+		var shieldOn = false;
+		for (var i = 0; i < count(effectMe); i++) {
+			if (effectMe[i][5] == CHIP_HELMET) {
+				shieldOn = true;
+			}
+		}
+		if (getCooldown(CHIP_PUNY_BULB) == 0 && getTP() >= getChipCost(CHIP_PUNY_BULB)) {
+				summon(CHIP_PUNY_BULB, getCellsToUseChipOnCell(CHIP_PUNY_BULB, getCell())[choixInvoCell()], bulbeChetifAI);
+			}
+		if (canUseChip(CHIP_HELMET, me) && getCooldown(CHIP_HELMET) == 0 && getTP() >= getChipCost(CHIP_HELMET) && getDistance(getCell(me), getCell(getNearestEnemy())) <= 14 && shieldOn == false) {
+				useChip(CHIP_HELMET, me);
+			}
+		if (canUseChip(CHIP_SHIELD, me) && getCooldown(CHIP_SHIELD) == 0 && getTP() >= getChipCost(CHIP_SHIELD) && getDistance(getCell(me), getCell(getNearestEnemy())) <= 14) {
+				useChip(CHIP_SHIELD, me);
+			}
+		if (getLife(me) < getTotalLife(me)/2 && canUseChip(CHIP_BANDAGE, me) && getCooldown(CHIP_BANDAGE) == 0 && getTP() >= getChipCost(CHIP_BANDAGE)) {
+			useChip(CHIP_BANDAGE, me);
+		}
+		if (getLife(me) < getTotalLife(me)/2 && canUseChip(CHIP_CURE, me) && getCooldown(CHIP_CURE) == 0 && getTP() >= getChipCost(CHIP_CURE)) {
+			useChip(CHIP_CURE, me);
+		}
+	}
+}
+
+// Gère les déplacements
+function deplacement(debut){
+	if (debut == true) {
+		if (getWeapon() == weaponCAC) {
+			while (canUseWeapon(enemy) == false && getMP() > 0){
+				moveToward(enemy, 1);
+			}
+		}else{
+			if (getDistance(getCell(me), getCell(enemy)) != 1) {
+				while (canUseWeapon(enemy) == false && getMP() > 0 && getDistance(getCell(me), getCell(enemy)) != 1) {
+					moveToward(enemy, 1);
+					choixEnemy();
+				}
+			}else{
+				moveAwayFrom(enemy, 1);
+			}
+		}
+	}else{
+		if (getWeapon(enemy) == WEAPON_MACHINE_GUN or getWeapon(enemy) == WEAPON_SHOTGUN or getWeapon(enemy) == WEAPON_LASER && isOnSameLine(getCell(enemy), getCell(me)) && getDistance(getCell(enemy), getCell(me)) > getMP()+1) {
+			moveAwayFromLine(getCell(enemy), getCell());
+		}else if (getWeapon() == weaponDist){
+			moveAwayFrom(enemy, getMP());
+		}
+	}
+}
+
+// IA Bulbe chétif (Invocation)
+function bulbeChetifAI(){
+// Variables
+	var summoner = getSummoner();
+// Tour de jeu
+// Se rapproche pour etre à 6 cases de distance de l'invocateur max
+	while (getDistance(getCell(), getCell(summoner)) > 6 && getMP() > 0) {
+		moveToward(summoner, 1);
+	}
+
+// Lance les actions de début de tour
+// On vérifit si l'invocateur à déjà le bouclier d'actif
+var effectSummoner = getEffects(summoner);
+var shieldOn = false;
+for (var i = 0; i < count(effectSummoner); i++) {
+	if (effectSummoner[i][5] == CHIP_HELMET) {
+		shieldOn = true;
+	}
+}
+// Lance Protection sur l'invocateur si possible, sinon essaie de s'approcher
+	if ((canUseChip(CHIP_HELMET, summoner) or getMP() > 0) && getCooldown(CHIP_HELMET) == 0 && getTP() >= getChipCost(CHIP_HELMET) && shieldOn == false) {
+		if (canUseChip(CHIP_HELMET, summoner)) {
+			useChip(CHIP_HELMET, summoner);
+		}else{
+			while (getDistance(getCell(), getCell(summoner)) > 4 && getMP() > 0) {
+				moveToward(summoner, 1);
+			}
+			if (canUseChip(CHIP_HELMET, summoner)) {
+				useChip(CHIP_HELMET, summoner);
+			}
+		}	
+	}
+// Soigne l'invocateur si il lui manque +de 10PV et que c'est possible
+	if (getTotalLife(summoner) - getLife(summoner) > 10 && canUseChip(CHIP_BANDAGE, summoner) && getCooldown(CHIP_BANDAGE) == 0 && getTP() >= getChipCost(CHIP_BANDAGE)) {
+		useChip(CHIP_BANDAGE, summoner);
+	}
+// Lance Force sur l'invocateur si c'est possible sinon essaie de s'approcher
+	if ((canUseChip(CHIP_PROTEIN, summoner) or getMP() > 0) && getCooldown(CHIP_PROTEIN) == 0 && getTP() >= getChipCost(CHIP_PROTEIN)) {
+		if (canUseChip(CHIP_PROTEIN, summoner)) {
+			useChip(CHIP_PROTEIN, summoner);
+		}else{
+			while (getDistance(getCell(), getCell(summoner)) > 4 && getMP() > 0) {
+				moveToward(summoner, 1);
+			}
+			if (canUseChip(CHIP_PROTEIN, summoner)) {
+				useChip(CHIP_PROTEIN, summoner);
+			}
+		}	
+	}
+// Attaque l'ennemi si il peut 
+	if (canUseChip(CHIP_PEBBLE, getNearestEnemy()) && getCooldown(CHIP_PEBBLE) == 0 && getTP() >= getChipCost(CHIP_PEBBLE)) {
+		useChip(CHIP_PEBBLE, getNearestEnemy());
+	}
+// Se soigne si il lui manque de la vie et si l'invocateur en a encore bcp
+	if (getLife(summoner) > getTotalLife(summoner)/2 && getTotalLife() - getLife() > 9 && canUseChip(CHIP_BANDAGE, me) && getCooldown(CHIP_BANDAGE) == 0 && getTP() >= getChipCost(CHIP_BANDAGE)) {
+		useChip(CHIP_BANDAGE, me);
+	}
+// Recule si est en ligne avec l'ennemi et si il est trop près
+	if (isSummon(getNearestEnemy()) == true) {
+		while (getMP() > 0 && getDistance(getCell(summoner), getCell()) > 4) {
+			moveToward(summoner, 1);
+		}
+	}else if (getWeapon(getNearestEnemy()) == WEAPON_MACHINE_GUN or getWeapon(getNearestEnemy()) == WEAPON_SHOTGUN or getWeapon(enemy) == WEAPON_LASER && isOnSameLine(getCell(getNearestEnemy()), getCell())) {
+		moveAwayFromLine(getCell(enemy), getCell());
+	}else{
+		while (getMP() > 0 && getDistance(getCell(summoner), getCell()) > 4) {
+			moveToward(summoner, 1);
+		}
+	}
+}
+
+// calcul du meilleur placement de l'invo (loin de l'ennemi)
+function choixInvoCell(){
+	var bestPlace = 0;
+	for (var i = 0; i < 4; i++) {
+		if (getDistance(getCellsToUseChipOnCell(CHIP_PUNY_BULB, getCell())[i], getCell(enemy)) > getDistance(getCellsToUseChipOnCell(CHIP_PUNY_BULB, getCell())[bestPlace], getCell(enemy))) {
+			bestPlace = i;
+		}
+	}
+	return bestPlace;
+}
+
+// Determine si il est plus rentable de frapper plutot que de soigner
+function berserker(){
+	var PA = getTP();
+	var boostForce = (getStrength() + 100) * 0.01;
+	var protecAbso = getAbsoluteShield(enemy);
+	var protecRelative = getRelativeShield(enemy) / 100;
+	var degats = 0;
+	var nbLeeks = 0;
+	for (var i = 0; i < count(getEnemies()); i++) {
+		if (isAlive(getEnemies()[i]) == true && isSummon(getEnemies()[i]) == false) {
+			nbLeeks = nbLeeks + 1;
+		}
+	}
+	if (getWeapon() == weaponCAC) {
+		degats = boostForce * (PA - (PA % getWeaponCost(weaponCAC))) / getWeaponCost(weaponCAC) * 39;
+	}else if (getWeapon() == weaponDist) {
+		degats = boostForce * (PA - (PA % getWeaponCost(weaponDist))) / getWeaponCost(weaponDist) * 23;
+	}
+	degats = degats * protecRelative - protecAbso;
+	if (degats >= getLife(enemy) && nbLeeks == 1) {
+		return true;
+	}
+	return false;
+}
+// FIN FONCTIONS
+
+// Tour de jeu
+// On choisit un ennemi et une arme et on se déplace
+choixEnemy();
+choixWeapon();
+deplacement(true);
+// Lance les actions de début de tour
+actionTour();
+// Utilise l'arme équipée autant que possible
+if (getWeapon() != null) {
+	while (useWeapon(enemy) == USE_SUCCESS or useWeapon(enemy) == USE_CRITICAL);
+}
+// Utilise les derniers TP restant pour lancer des Puces si c'est possible
+while (choixChips());
+// Recule si il reste des PM et s'éloigne de l'ennemi
+deplacement(false);
